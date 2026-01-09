@@ -94,11 +94,12 @@ export default defineNuxtConfig({
     // defaults: {
     //   extension: 'jpeg',
     // },
-    // compatibility: {
-    //   dev: {
-    //     chromium: false,
-    //   },
-    // },
+    compatibility: {
+      // dev: {
+      //   chromium: false,
+      // },
+      sharp: true
+    },
     // runtimeCacheStorage: {
     //   driver: 'redis',
     //   options: {

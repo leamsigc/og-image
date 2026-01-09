@@ -1,6 +1,6 @@
 import type { SatoriOptions } from 'satori'
 import type { JpegOptions } from 'sharp'
-import type { OgImageRenderEventContext, Renderer, ResolvedFontConfig } from '../../../types'
+import type { OgImageRenderEventContext, Renderer, ResolvedFontConfig, OgImageFrameInfo } from '../../../types'
 import { fontCache } from '#og-image-cache'
 import { theme } from '#og-image-virtual/unocss-config.mjs'
 // @ts-expect-error untyped
@@ -56,7 +56,7 @@ export async function createSvg(event: OgImageRenderEventContext) {
   ])
 
   await event._nitro.hooks.callHook('nuxt-og-image:satori:vnodes', vnodes, event)
-  const satoriOptions: SatoriOptions = defu(options.satori, _satoriOptions, <SatoriOptions> {
+  const satoriOptions: SatoriOptions = defu(options.satori, _satoriOptions, <SatoriOptions>{
     fonts,
     tailwindConfig: { theme },
     embedFont: true,
@@ -100,6 +100,112 @@ async function createJpeg(event: OgImageRenderEventContext) {
     .jpeg(options as JpegOptions)
     .toBuffer()
 }
+async function createVideo(event: OgImageRenderEventContext) {
+  const { sharpOptions } = useOgImageRuntimeConfig()
+  console.log(sharpOptions);
+
+  if (compatibility.sharp === false) {
+    throw new Error('Sharp dependency is not accessible. Please check you have it installed and are using a compatible runtime.')
+  }
+  // Start creating the video
+  const {
+    props,
+    width = 1920,
+    height = 1080,
+    fps = 30,
+    duration = 5,
+    crf = 23,
+  } = event.options;
+  const format = event.extension
+
+  const sharp = await useSharp().catch(() => {
+    throw new Error('Sharp dependency could not be loaded. Please check you have it installed and are using a compatible runtime.')
+  })
+
+  console.log({ props, width, height, format, fps, duration, crf });
+  const totalFrames = Math.floor(fps * duration);
+  const frames = [];
+
+  // Render each frame
+  for (let i = 0; i < totalFrames; i++) {
+    const progress = i / (totalFrames - 1);
+    const time = i / fps;
+
+    const frameInfo: OgImageFrameInfo = {
+      index: i,
+      total: totalFrames,
+      progress,
+      time,
+      fps,
+      duration,
+    };
+    // add the frame info to the props as class data
+    event.options.props = {
+      ...event.options.props,
+      'class': {
+        progress: frameInfo?.progress ?? 0,
+        frame: frameInfo?.index ?? 0,
+        totalFrames: frameInfo?.total,
+        durationMs: frameInfo?.duration ? frameInfo.duration * 1000 : undefined,
+      }
+    }
+    const png = await createPng(event);
+    frames.push(png);
+  }
+
+  // Encode video using h264-mp4-encoder
+  if (format === 'mp4') {
+    const { default: HME } = await import('h264-mp4-encoder');
+    const encoder = await HME.createH264MP4Encoder();
+
+    encoder.width = width as number;
+    encoder.height = height as number;
+    encoder.frameRate = fps;
+    encoder.quantizationParameter = crf;
+
+    encoder.initialize();
+
+    // Add frames
+    for (const frame of frames) {
+      const { data } = await sharp(frame).raw().toBuffer({ resolveWithObject: true });
+      encoder.addFrameRgba(new Uint8Array(data));
+    }
+
+    encoder.finalize();
+
+    const mp4 = encoder.FS.readFile(encoder.outputFilename);
+    encoder.delete();
+
+    return Buffer.from(mp4);
+  }
+
+  // Encode GIF using gifenc
+  if (format === 'gif') {
+    const { GIFEncoder, quantize, applyPalette } = await import('gifenc');
+
+    const gif = GIFEncoder();
+    const frameDelay = Math.round(1000 / fps);
+
+    for (const frame of frames) {
+      const { data, info } = await sharp(frame)
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      const rgba = new Uint8Array(data);
+      const palette = quantize(rgba, 256);
+      const indexed = applyPalette(rgba, palette);
+
+      gif.writeFrame(indexed, info.width, info.height, {
+        palette,
+        delay: frameDelay,
+      });
+    }
+
+    gif.finish();
+
+    return Buffer.from(gif.bytes());
+  }
+}
 
 const SatoriRenderer: Renderer = {
   name: 'satori',
@@ -111,6 +217,9 @@ const SatoriRenderer: Renderer = {
       case 'jpeg':
       case 'jpg':
         return createJpeg(e)
+      case 'gif':
+      case 'mp4':
+        return createVideo(e)
     }
   },
   async debug(e) {

@@ -110,7 +110,7 @@ export async function imageEventHandler(e: H3Event) {
   if (isDebugJsonPayload) {
     const queryExtension = getQuery(e).extension || ctx.options.extension
     // figure out compatibilityHints based on what we're using
-    if (['jpeg', 'jpg'].includes(queryExtension as string) && options.renderer === 'satori')
+    if (['jpeg', 'jpg', 'mp4', 'gif'].includes(queryExtension as string) && options.renderer === 'satori')
       compatibilityHints.push('Converting PNGs to JPEGs requires Sharp which only runs on Node based systems.')
     if (options.renderer === 'chromium')
       compatibilityHints.push('Using Chromium to generate images is only supported in Node based environments. It\'s recommended to only use this if you\'re prerendering')
@@ -125,6 +125,8 @@ export async function imageEventHandler(e: H3Event) {
       ...(options.renderer === 'satori' ? await renderer.debug(ctx) : undefined),
     }
   }
+  console.log(extension);
+
   switch (extension) {
     case 'html':
       setHeader(e, 'Content-Type', `text/html`)
@@ -156,6 +158,16 @@ export async function imageEventHandler(e: H3Event) {
         })
       }
       setHeader(e, 'Content-Type', `image/${extension === 'jpg' ? 'jpeg' : extension}`)
+      break
+    case 'mp4':
+    case 'gif':
+      // if (!renderer.supportedFormats.includes(extension)) {
+      //   return createError({
+      //     statusCode: 400,
+      //     statusMessage: `[Nuxt OG Image] Generating ${extension}\'s with ${renderer.name} is not supported.`,
+      //   })
+      // }
+      setHeader(e, 'Content-Type', `video/${extension}`)
       break
     default:
       return createError({

@@ -59,7 +59,7 @@ export async function resolveContext(e: H3Event): Promise<H3Error | OgImageRende
       statusMessage: `[Nuxt OG Image] Missing OG Image type.`,
     })
   }
-  if (!['png', 'jpeg', 'jpg', 'svg', 'html', 'json'].includes(extension)) {
+  if (!['png', 'jpeg', 'jpg', 'svg', 'html', 'json', 'mp4', 'gif'].includes(extension)) {
     return createError({
       statusCode: 400,
       statusMessage: `[Nuxt OG Image] Unknown OG Image type ${extension}.`,
@@ -342,7 +342,7 @@ async function fetchPathHtmlAndExtractOptions(e: H3Event, path: string, key: str
   return typeof payload === 'object'
     ? payload
     : createError({
-        statusCode: 500,
-        statusMessage: '[Nuxt OG Image] Invalid payload type.',
-      })
+      statusCode: 500,
+      statusMessage: '[Nuxt OG Image] Invalid payload type.',
+    })
 }

@@ -96,7 +96,9 @@
     "ufo": "catalog:",
     "unplugin": "catalog:",
     "unwasm": "catalog:",
-    "yoga-wasm-web": "catalog:"
+    "yoga-wasm-web": "catalog:",
+    "h264-mp4-encoder": "catalog:",
+    "gifenc": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",

@@ -13,7 +13,7 @@ import type { Ref } from 'vue'
 export interface OgImageRenderEventContext {
   unocss: UnoGenerator
   e: H3Event
-  extension: 'png' | 'jpeg' | 'jpg' | 'svg' | 'html' | 'json'
+  extension: 'png' | 'jpeg' | 'jpg' | 'svg' | 'html' | 'json' | 'mp4' | 'gif'
   key: string
   basePath: string
   renderer: Renderer
@@ -119,7 +119,7 @@ export interface OgImageOptions<T extends keyof OgImageComponents = 'NuxtSeo'> {
    */
   props?: OgImageComponents[T] | Record<string, any>
   renderer?: 'chromium' | 'satori'
-  extension?: 'png' | 'jpeg' | 'jpg'
+  extension?: 'png' | 'jpeg' | 'jpg' | 'mp4' | 'gif'
   emojis?: IconifyEmojiIconSets
   /**
    * Provide a static HTML template to render the OG Image instead of a component.
@@ -142,6 +142,12 @@ export interface OgImageOptions<T extends keyof OgImageComponents = 'NuxtSeo'> {
    * @internal
    */
   _query?: Record<string, any>
+  // video FrameRate
+  fps?: number,
+  // video Duration
+  duration?: number,
+  // video Quality
+  crf?: number,
 }
 
 export interface FontConfig {
@@ -209,4 +215,19 @@ export interface SocialPreviewMetaData {
 export interface RouteRulesOgImage extends Partial<OgImageOptions> {
   // Allow for route rules to disable og:image by setting to false
   [key: string]: any
+}
+
+export interface OgImageFrameInfo {
+  /** Current frame number (0-based) */
+  index: number;
+  /** Total number of frames */
+  total: number;
+  /** Progress from 0 to 1 */
+  progress: number;
+  /** Current time in seconds */
+  time: number;
+  /** Frames per second */
+  fps: number;
+  /** Total duration in seconds */
+  duration: number;
 }

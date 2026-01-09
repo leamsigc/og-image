@@ -10,6 +10,7 @@
   "dependencies": {
     "better-sqlite3": "catalog:",
     "nuxt-og-image": "workspace:*",
-    "nuxt-og-image-devtools": "workspace:*"
+    "nuxt-og-image-devtools": "workspace:*",
+    "sharp": "workspace:*"
   }
 }
